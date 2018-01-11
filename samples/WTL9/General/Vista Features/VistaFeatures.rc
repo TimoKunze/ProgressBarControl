@@ -1,0 +1,153 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "atlres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""atlres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "res\\VistaFeatures.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_MAINDLG DIALOGEX 0, 0, 306, 59
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "ProgressBar 2.6 - Vista Features Sample"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    PUSHBUTTON      "&About...",ID_APP_ABOUT,254,5,50,14
+    CONTROL         "",IDC_PROGBARU,"{C1538205-902C-423F-AAE5-8E724B88A6F5}",0x0,3,6,247,11
+    GROUPBOX        "&State",IDC_STATIC,3,21,148,34
+    CONTROL         "&Normal",IDC_STATENORMAL,"Button",BS_AUTORADIOBUTTON,9,36,39,10
+    CONTROL         "&Paused",IDC_STATEPAUSED,"Button",BS_AUTORADIOBUTTON,59,36,39,10
+    CONTROL         "&Failed",IDC_STATEFAILED,"Button",BS_AUTORADIOBUTTON,107,36,39,10
+    GROUPBOX        "&Current Value",IDC_STATIC,156,21,147,34
+    CONTROL         "S&mooth Reverse",IDC_SMOOTHREVERSE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,160,36,66,10
+    EDITTEXT        IDC_CURRENTVALUE,231,34,34,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
+    PUSHBUTTON      "Appl&y",IDC_APPLY,268,33,33,14,WS_DISABLED
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "FileDescription", "Vista Features sample for TimoSoft ProgressBar 2.6"
+            VALUE "FileVersion", "1.0.0.0"
+            VALUE "InternalName", "VistaFeatures"
+            VALUE "OriginalFilename", "VistaFeatures.exe"
+            VALUE "ProductName", "TimoSoft ProgressBar 2.6"
+            VALUE "ProductVersion", "2.6"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog Info
+//
+
+IDD_MAINDLG DLGINIT
+BEGIN
+    IDC_PROGBARU, 0x376, 160, 0
+0x0000, 0x0000, 0x0707, 0x0707, 0x0101, 0x0000, 0x0900, 0x0000, 0x293d, 
+0x0000, 0x01c2, 0x0000, 0x000b, 0xffff, 0x0003, 0x0003, 0x0000, 0x0003, 
+0xffff, 0xffff, 0x0003, 0xffff, 0xffff, 0x0003, 0x0000, 0x0000, 0x0003, 
+0x0000, 0x0000, 0x0003, 0x0000, 0x0000, 0x0003, 0x0003, 0x0000, 0x000b, 
+0x0000, 0x000b, 0xffff, 0x0003, 0xffff, 0xffff, 0x0003, 0x0032, 0x0000, 
+0x0003, 0x0064, 0x0000, 0x0003, 0x0000, 0x0000, 0x0009, 0x0000, 0x0000, 
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0003, 0x0000, 0x0000, 
+0x0003, 0x0000, 0x0000, 0x0003, 0x0001, 0x0000, 0x000b, 0xffff, 0x000b, 
+0x0000, 0x000b, 0xffff, 0x0003, 0x000a, 0x0000, 0x000b, 0xffff, 
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDR_MAINFRAME           "VistaFeatures"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+

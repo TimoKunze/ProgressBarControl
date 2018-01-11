@@ -1,0 +1,9 @@
+; ProgBarA.def: Declares the module parameters. (ANSI version)
+
+LIBRARY      "ProgBarA.ocx"
+
+EXPORTS
+	DllCanUnloadNow		PRIVATE
+	DllGetClassObject	PRIVATE
+	DllRegisterServer	PRIVATE
+	DllUnregisterServer	PRIVATE

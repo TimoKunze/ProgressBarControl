@@ -1,0 +1,25 @@
+HKCR
+{
+	ProgBarU.StringProperties.1 = s 'TimoSoft StringProperties Class 2.6 (Unicode)'
+	{
+		CLSID = s '{CF3E4327-16C3-446A-A9CF-DE7144C9D43C}'
+	}
+	ProgBarU.StringProperties = s 'TimoSoft StringProperties Class (Unicode)'
+	{
+		CLSID = s '{CF3E4327-16C3-446A-A9CF-DE7144C9D43C}
+		CurVer = s 'ProgBarU.StringProperties.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {CF3E4327-16C3-446A-A9CF-DE7144C9D43C} = s 'TimoSoft StringProperties Class (Unicode)'
+		{
+			ProgID = s 'ProgBarU.StringProperties.1'
+			VersionIndependentProgID = s 'ProgBarU.StringProperties'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{52D76F35-4551-4c56-B53B-A343E42B0AF8}'
+		}
+	}
+}

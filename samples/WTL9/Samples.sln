@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "General", "General", "{F5C3FA29-8F87-4BE9-B498-1A41D0CF4D0D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Events", "General\Events\Events.vcxproj", "{15359AB9-0BB9-44CF-8D92-692A1CE47D85}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VistaFeatures", "General\Vista Features\VistaFeatures.vcxproj", "{1BEC0C89-B71C-40D8-9C0E-D2C146E67273}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{15359AB9-0BB9-44CF-8D92-692A1CE47D85}.Debug|Win32.ActiveCfg = Debug|Win32
+		{15359AB9-0BB9-44CF-8D92-692A1CE47D85}.Debug|Win32.Build.0 = Debug|Win32
+		{15359AB9-0BB9-44CF-8D92-692A1CE47D85}.Release|Win32.ActiveCfg = Release|Win32
+		{15359AB9-0BB9-44CF-8D92-692A1CE47D85}.Release|Win32.Build.0 = Release|Win32
+		{1BEC0C89-B71C-40D8-9C0E-D2C146E67273}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1BEC0C89-B71C-40D8-9C0E-D2C146E67273}.Debug|Win32.Build.0 = Debug|Win32
+		{1BEC0C89-B71C-40D8-9C0E-D2C146E67273}.Release|Win32.ActiveCfg = Release|Win32
+		{1BEC0C89-B71C-40D8-9C0E-D2C146E67273}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{15359AB9-0BB9-44CF-8D92-692A1CE47D85} = {F5C3FA29-8F87-4BE9-B498-1A41D0CF4D0D}
+		{1BEC0C89-B71C-40D8-9C0E-D2C146E67273} = {F5C3FA29-8F87-4BE9-B498-1A41D0CF4D0D}
+	EndGlobalSection
+EndGlobal

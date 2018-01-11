@@ -1,0 +1,1740 @@
+//////////////////////////////////////////////////////////////////////
+/// \mainpage ProgressBar Documentation
+///
+/// \section intro_sec Introduction
+///
+/// %ProgressBar is an ActiveX control that wraps the \c msctls_progress32 window class. It is optimized
+/// for Visual Basic 6.0, but should also work in any other environment that supports COM controls.
+///
+/// \section basics_sec Basics
+///
+/// The control superclasses the native progress bar window class of Windows: \c msctls_progress32.
+/// Although I tried to wrap all features of this window class (status: Windows 10), some things
+/// may be missing. In these cases you may try using the Win32 API and handle the control as a native
+/// progress bar window.
+///
+/// \section reqs_sec Requirements
+///
+/// %ProgressBar ANSI runs on the following operating systems:
+/// - Windows XP (SP3 or later) - <strong>limited support</strong>
+/// - Windows Server 2003 (SP2 or later) - <strong>limited support</strong>
+/// - Windows Vista (SP2 or later) - <strong>limited support</strong>
+/// - Windows Server 2008 (SP2 or later) - <strong>limited support</strong>
+/// - Windows 7 (SP1 or later) - <strong>limited support</strong>
+/// - Windows Server 2008 R2 (SP1 or later) - <strong>limited support</strong>
+/// - Windows 8 - <strong>limited support</strong>
+/// - Windows Server 2012 - <strong>limited support</strong>
+/// - Windows 8.1 - <strong>limited support</strong>
+/// - Windows Server 2012 R2 - <strong>limited support</strong>
+/// - Windows 10 - <strong>limited support</strong>
+/// - Windows Server 2016 - <strong>limited support</strong>
+///
+/// Some features have additional requirements which are mentioned in the affected feature's
+/// documentation.\n
+/// Limited support means, that I won't invest much work to support those systems. If a feature works on
+/// a system marked with "limited support" - fine; if it does not and it's easy to fix, I'll fix it, but if
+/// it's difficult to fix, I probably won't fix it. Also I will test the control much less on those systems.
+///
+/// \section support_sec Support
+///
+/// Although there's no entitlement to support, you've good chances to get help if you either post
+/// to the <a href="https://www.timosoft-software.de/forum/viewforum.php?f=7">forums</a> or
+/// <a href="mailto:Timo@TimoSoft-Software.de">send me a mail</a>.\n
+/// Bugs and feature requests should be entered into the <a href="https://bugtracker.timosoft-software.de">bug tracking system</a>.
+///
+/// \section lic_sec License
+///
+/// <pre>
+///      MIT License
+///
+///      Copyright (c) 2003-2018 Timo Kunze
+///
+///      Permission is hereby granted, free of charge, to any person obtaining a copy
+///      of this software and associated documentation files (the "Software"), to deal
+///      in the Software without restriction, including without limitation the rights
+///      to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+///      copies of the Software, and to permit persons to whom the Software is
+///      furnished to do so, subject to the following conditions:
+///
+///      The above copyright notice and this permission notice shall be included in all
+///      copies or substantial portions of the Software.
+///
+///      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+///      IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+///      FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+///      AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+///      LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+///      OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+///      SOFTWARE.
+/// </pre>
+///
+/// \section acks_sec Acknowledgements
+///
+/// Thanks go to:
+/// - <a href="https://www.winehq.com">Wine Headquarters</a>, because Wine helped me a lot on
+///   understanding how Windows is working.
+/// - Microsoft, for ATL, WTL and Visual Studio - great libraries and a great IDE
+/// - <a href="https://www.geoffchappell.com">Geoff Chappell</a>, for his website about undocumented Win32
+///   API stuff.
+/// - Igor Tandetnik, for his great help on learning ATL and WTL
+/// - Dimitri van Heesch, for Doxygen
+/// - <a href="http://www.zabkat.com/">Nikos Bozinis</a>, for his awesome help with the Vista drag'n'drop
+///   stuff.
+/// - <a href="https://www.dateicommander.de">Christian Lütgens</a>, for his great work as beta-tester
+///   and for his help when I needed a 2nd opinion on some decisions.
+/// - All donators
+/// - For great music: Heaven Shall Burn, Arch Enemy, Machine Head, Trivium, Deadlock, Draconian, Soulfly,
+///   Delain, Lacuna Coil, Ensiferum, Epica, Sirenia, Tristania, Nightwish, Battlelore, Amon Amarth, Volbeat,
+///   Guns N' Roses
+///
+/// \section faq_sec FAQ
+///
+/// <strong>1. Why is event xyz not fired?</strong>\n
+/// Firing an event is relative time-consuming, even if the event isn't handled by the application at all.
+/// Therefore I implemented a \c DisabledEvents property which can be used to deactivate certain events.\n
+/// By default many events are deactivated.
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+/// \namespace ProgBarLibA
+/// \brief <em>Contains COM definitions for the controls' public interfaces</em>
+///
+/// This is the ANSI version of the ProgressBar COM library.
+//////////////////////////////////////////////////////////////////////
+
+
+#include "olectl.h"
+#include "CompilerFlags.h"
+#include "DispIDs.h"
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+	// interface is not automation marshaling conformant, requires Windows NT 4.0 SP4 or greater
+	midl_pragma warning(disable: 2039)
+	// identifier length exceeds 31 characters
+	midl_pragma warning(disable: 2111)
+	// too many methods in the interface, requires Windows NT 4.0 SP3 or greater
+	midl_pragma warning(disable: 2362)
+#endif
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+
+[
+	uuid(74B9FB9B-58D2-4789-9052-ED4EF2ADA75F),
+	version(2.6),
+	helpstring("TimoSoft ProgressBar 2.6 (ANSI)")
+]
+library ProgBarLibA
+{
+	importlib("stdole2.tlb");
+
+
+	/// \brief <em>Constants used with the \c Appearance property</em>
+	///
+	/// \sa IProgressBar::Appearance
+	[helpstring("Constants used with the 'Appearance' property.")]
+	typedef enum AppearanceConstants {
+		/// \brief The control is drawn with a flat border
+		[helpstring("The control is drawn flat.")]
+		a2D,
+		/// \brief The control is drawn with a normal 3D border
+		[helpstring("The control is drawn with a normal 3D border.")]
+		a3D,
+		/// \brief The control is drawn with a light 3D border
+		[helpstring("The control is drawn with a light 3D border.")]
+		a3DLight,
+		/// \brief Let the control decide about the outer border style
+		///
+		/// \remarks This value can't be set at runtime.
+		[helpstring("The control decides itself which border to draw. This value can't be set at runtime.")]
+		aDefault
+	} AppearanceConstants;
+
+	/// \brief <em>Constants used with the \c BarStyle property</em>
+	///
+	/// \sa IProgressBar::BarStyle
+	[helpstring("Constants used with the 'BarStyle' property.")]
+	typedef enum BarStyleConstants {
+		/// \brief The progress bar displays progress status in a segmented bar
+		///
+		/// \sa IProgressBar::Minimum, IProgressBar::Maximum, IProgressBar::CurrentValue
+		[helpstring("The progress bar consists of multiple segments.")]
+		basSegments,
+		/// \brief The progress bar displays progress status in a smooth scrolling bar
+		///
+		/// \sa IProgressBar::Minimum, IProgressBar::Maximum, IProgressBar::CurrentValue
+		[helpstring("The progress bar displays progress status in a smooth scrolling bar.")]
+		basSmooth,
+		/// \brief The progress bar moves like a marquee
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa IProgressBar::ActivateMarquee, IProgressBar::MarqueeStepDuration
+		[helpstring("The progress bar moves like a marquee. Requires comctl32.dll version 6.0 or higher.")]
+		basMarquee
+	} BarStyleConstants;
+
+	/// \brief <em>Constants used with the \c BorderStyle property</em>
+	///
+	/// \sa IProgressBar::BorderStyle
+	[helpstring("Constants used with the 'BorderStyle' property.")]
+	typedef enum BorderStyleConstants {
+		/// \brief The control is drawn without an inner border
+		[helpstring("The control is drawn without an additional border.")]
+		bsNone,
+		/// \brief The control is drawn with an inner border
+		[helpstring("The control is drawn with an additional border.")]
+		bsFixedSingle
+	} BorderStyleConstants;
+
+	/// \brief <em>Flags used with the \c DisabledEvents property</em>
+	///
+	/// \sa IProgressBar::DisabledEvents
+	[helpstring("Flags used with the 'DisabledEvents' property. They can be combined.")]
+	typedef enum DisabledEventsConstants {
+		/// \brief Mouse events won't be fired
+		///
+		/// The following events won't be fired: \c MouseDown, \c MouseUp, \c MouseEnter, \c MouseHover,
+		/// \c MouseLeave, \c MouseMove
+		///
+		/// \sa _IProgressBarEvents::MouseDown, _IProgressBarEvents::MouseUp, _IProgressBarEvents::MouseEnter,
+		///     _IProgressBarEvents::MouseHover, _IProgressBarEvents::MouseLeave,
+		///     _IProgressBarEvents::MouseMove
+		[helpstring("Disables the following events: MouseDown, MouseUp, MouseEnter, MouseHover, MouseLeave, MouseMove")]
+		deMouseEvents = 0x01,
+		/// \brief Click events won't be fired
+		///
+		/// The following events won't be fired: \c Click, \c DblClick, \c MClick, \c MDblClick,
+		/// \c RClick, \c RDblClick, \c XClick, \c XDblClick
+		///
+		/// \sa _IProgressBarEvents::Click, _IProgressBarEvents::DblClick, _IProgressBarEvents::MClick,
+		///     _IProgressBarEvents::MDblClick, _IProgressBarEvents::RClick, _IProgressBarEvents::RDblClick,
+		///     _IProgressBarEvents::XClick, _IProgressBarEvents::XDblClick
+		[helpstring("Disables the following events: Click, DblClick, MClick, MDblClick, RClick, RDblClick, XClick, XDblClick")]
+		deClickEvents = 0x02
+	} DisabledEventsConstants;
+
+	/// \brief <em>Constants used with the \c IOLEDataObject::GetDropDescription and IOLEDataObject::SetDropDescription methods</em>
+	///
+	/// \sa IOLEDataObject::GetDropDescription, IOLEDataObject::SetDropDescription
+	[helpstring("Constants used with the 'OLEDataObject.GetDropDescription' and 'OLEDataObject.SetDropDescription' methods.")]
+	typedef enum DropDescriptionIconConstants {
+		/// \brief No drop description is displayed
+		[helpstring("No drop description is displayed.")]
+		ddiNone = -1/*DROPIMAGE_INVALID*/,     // should be 8 (DROPIMAGE_NOIMAGE)
+		/// \brief The drop description icon that visualizes the \c odeNone drop effect is displayed
+		[helpstring("The drop description icon that visualizes the 'odeNone' drop effect is displayed.")]
+		ddiNoDrop = 0/*DROPIMAGE_NONE*/,
+		/// \brief The drop description icon that visualizes the \c odeCopy drop effect is displayed
+		[helpstring("The drop description icon that visualizes the 'odeCopy' drop effect is displayed.")]
+		ddiCopy = 1/*DROPIMAGE_COPY*/,
+		/// \brief The drop description icon that visualizes the \c odeMove drop effect is displayed
+		[helpstring("The drop description icon that visualizes the 'odeMove' drop effect is displayed.")]
+		ddiMove = 2/*DROPIMAGE_MOVE*/,
+		/// \brief The drop description icon that visualizes the \c odeLink drop effect is displayed
+		[helpstring("The drop description icon that visualizes the 'odeLink' drop effect is displayed.")]
+		ddiLink = 4/*DROPIMAGE_LINK*/,
+		/// \brief The drop description icon that visualizes a drop, which causes a metadata change, is displayed
+		[helpstring("The drop description icon that visualizes a drop, which causes a metadata change, is displayed.")]
+		ddiMetadataChange = 6/*DROPIMAGE_LABEL*/,
+		/// \brief The drop description icon that visualizes a warning is displayed
+		[helpstring("The drop description icon that visualizes a warning is displayed.")]
+		ddiWarning = 7/*DROPIMAGE_WARNING*/,
+		/// \brief The default drop description is displayed
+		///
+		/// \remarks Requires Windows 7 or newer.
+		[helpstring("The default drop description is displayed. Requires Windows 7 or newer.")]
+		ddiUseDefault = 8/*DROPIMAGE_NOIMAGE*/     // should be -1 (DROPIMAGE_INVALID)
+	} DropDescriptionIconConstants;
+
+	/// \brief <em>Constants used with the extended mouse button events</em>
+	///
+	/// \sa _IProgressBarEvents::MouseDown, _IProgressBarEvents::MouseEnter, _IProgressBarEvents::MouseHover,
+	///     _IProgressBarEvents::MouseLeave, _IProgressBarEvents::MouseMove, _IProgressBarEvents::MouseUp,
+	///     _IProgressBarEvents::XClick, _IProgressBarEvents::XDblClick
+	[helpstring("Constants used with the extended mouse button events.")]
+	typedef enum ExtendedMouseButtonConstants {
+		/// \brief Identifies the first extended mouse button
+		[helpstring("Identifies the first extended mouse button.")]
+		embXButton1 = 0x20,
+		/// \brief Identifies the second extended mouse button
+		[helpstring("Identifies the second extended mouse button.")]
+		embXButton2 = 0x40
+	} ExtendedMouseButtonConstants;
+
+	/// \brief <em>Constants used with the \c HAlignment properties</em>
+	///
+	/// \sa IProgressBar::HAlignment
+	[helpstring("Constants used with the 'HAlignment' properties.")]
+	typedef enum HAlignmentConstants {
+		/// \brief The control's content is left-aligned
+		[helpstring("The control's content is left-aligned.")]
+		halLeft,
+		/// \brief The control's content is horizontally centered
+		[helpstring("The control's content is horizontally centered.")]
+		halCenter,
+		/// \brief The control's content is right-aligned
+		[helpstring("The control's content is right-aligned.")]
+		halRight
+	} HAlignmentConstants;
+
+	/// \brief <em>Constants used with the \c MousePointer property</em>
+	///
+	/// \sa IProgressBar::MousePointer
+	[helpstring("Constants used with the 'MousePointer' property.")]
+	typedef enum MousePointerConstants {
+		/// \brief The default mouse cursor is used
+		[helpstring("The default mouse cursor is used.")]
+		mpDefault,
+		/// \brief The default arrow is used as mouse cursor
+		[helpstring("The default arrow is used as mouse cursor.")]
+		mpArrow,
+		/// \brief A cross is used as mouse cursor
+		[helpstring("A cross is used as mouse cursor.")]
+		mpCross,
+		/// \brief A vertical beam (like in textboxes) is used as mouse cursor
+		[helpstring("A vertical beam (like in textboxes) is used as mouse cursor.")]
+		mpIBeam,
+		/// \brief An icon is used as mouse cursor
+		[helpstring("An icon is used as mouse cursor.")]
+		mpIcon,
+		/// \brief A mouse cursor indicating window sizing is used
+		[helpstring("A mouse cursor indicating window sizing is used.")]
+		mpSize,
+		/// \brief A mouse cursor indicating window sizing is used
+		///
+		/// This is the cursor that is used while resizing a window into the direction of its
+		/// upper-right or lower-left corner.
+		[helpstring("A mouse cursor indicating window sizing to the direction of a window's upper-right or lower-left corner is used.")]
+		mpSizeNESW,
+		/// \brief A mouse cursor indicating window sizing is used
+		///
+		/// This is the cursor that is used while resizing a window into the direction of its upper or
+		/// lower border.
+		[helpstring("A mouse cursor indicating window sizing to the direction of a window's upper or lower border is used.")]
+		mpSizeNS,
+		/// \brief A mouse cursor indicating window sizing is used
+		///
+		/// This is the cursor that is used while resizing a window into the direction of its
+		/// upper-left or lower-right corner.
+		[helpstring("A mouse cursor indicating window sizing to the direction of a window's upper-left or lower-right corner is used.")]
+		mpSizeNWSE,
+		/// \brief A mouse cursor indicating window sizing is used
+		///
+		/// This is the cursor that is used while resizing a window into the direction of its left or
+		/// right border.
+		[helpstring("A mouse cursor indicating window sizing to the direction of a window's left or right border is used.")]
+		mpSizeEW,
+		/// \brief An arrow pointing upwardly is used as mouse cursor
+		[helpstring("An arrow pointing upwardly is used as mouse cursor.")]
+		mpUpArrow,
+		/// \brief An hourglass is used as mouse cursor.
+		[helpstring("An hourglass is used as mouse cursor.")]
+		mpHourglass,
+		/// \brief An mouse cursor indicating that the control can't be a drop target is used
+		[helpstring("An mouse cursor indicating that the control can't be a drop target is used.")]
+		mpNoDrop,
+		/// \brief The default arrow with a small hourglass is used as mouse cursor
+		[helpstring("The default arrow with a small hourglass is used as mouse cursor.")]
+		mpArrowHourglass,
+		/// \brief The default arrow with a small question mark is used as mouse cursor
+		[helpstring("The default arrow with a small question mark is used as mouse cursor.")]
+		mpArrowQuestion,
+		/// \brief A mouse cursor indicating window sizing to all directions is used
+		[helpstring("A mouse cursor indicating window sizing to all directions is used.")]
+		mpSizeAll,
+		/// \brief A hand typically used for hyperlinks is used as mouse cursor
+		[helpstring("A hand typically used for hyperlinks is used as mouse cursor.")]
+		mpHand,
+		/// \brief A mouse cursor indicating that the program waits for some media is used
+		[helpstring("A mouse cursor indicating that the program waits for some media is used.")]
+		mpInsertMedia,
+		/// \brief A mouse cursor indicating scrolling to all directions is used
+		[helpstring("A mouse cursor indicating scrolling to all directions is used.")]
+		mpScrollAll,
+		/// \brief A mouse cursor indicating scrolling upwardly is used
+		[helpstring("A mouse cursor indicating scrolling upwardly is used.")]
+		mpScrollN,
+		/// \brief A mouse cursor indicating scrolling to the window's upper-right corner is used
+		[helpstring("A mouse cursor indicating scrolling to the window's upper-right corner is used.")]
+		mpScrollNE,
+		/// \brief A mouse cursor indicating scrolling to the window's right border is used
+		[helpstring("A mouse cursor indicating scrolling to the window's right border is used.")]
+		mpScrollE,
+		/// \brief A mouse cursor indicating scrolling to the window's lower-right corner is used
+		[helpstring("A mouse cursor indicating scrolling to the window's lower-right corner is used.")]
+		mpScrollSE,
+		/// \brief A mouse cursor indicating scrolling downwards is used
+		[helpstring("A mouse cursor indicating scrolling downwards is used.")]
+		mpScrollS,
+		/// \brief A mouse cursor indicating scrolling to the window's lower-left corner is used
+		[helpstring("A mouse cursor indicating scrolling to the window's lower-left corner is used.")]
+		mpScrollSW,
+		/// \brief A mouse cursor indicating scrolling to the window's left border is used
+		[helpstring("A mouse cursor indicating scrolling to the window's left border is used.")]
+		mpScrollW,
+		/// \brief A mouse cursor indicating scrolling to the window's upper-left corner is used
+		[helpstring("A mouse cursor indicating scrolling to the window's upper-left corner is used.")]
+		mpScrollNW,
+		/// \brief A mouse cursor indicating scrolling upwardly or downwards is used
+		[helpstring("A mouse cursor indicating scrolling upwardly or downwards is used.")]
+		mpScrollNS,
+		/// \brief A mouse cursor indicating scrolling to the window's left or right border is used
+		[helpstring("A mouse cursor indicating scrolling to the window's left or right border is used.")]
+		mpScrollEW,
+		/// \brief The custom mouse cursor defined by the \c MouseIcon property is used
+		[helpstring("The custom mouse cursor defined by the MouseIcon property is used.")]
+		mpCustom = 0x63
+	} MousePointerConstants;
+
+	/// \brief <em>Constants used with OLE drag'n'drop</em>
+	///
+	/// \sa _IProgressBarEvents::OLEDragEnter, _IProgressBarEvents::OLEDragMouseMove,
+	///     _IProgressBarEvents::OLEDragDrop
+	[helpstring("Constants used with the OLEDrag* events.")]
+	typedef enum OLEDropEffectConstants {
+		/// \brief No OLE drag and drop operation has occurred or will occur
+		[helpstring("No OLE drag and drop operation has occurred or will occur.")]
+		odeNone = 0 /*DROPEFFECT_NONE*/,
+		/// \brief A copy has occured or will occur
+		[helpstring("A copy has occured or will occur.")]
+		odeCopy = 1 /*DROPEFFECT_COPY*/,
+		/// \brief A move has occured or will occur
+		[helpstring("A move has occured or will occur.")]
+		odeMove = 2 /*DROPEFFECT_MOVE*/,
+		/// \brief A link has occured or will occur
+		[helpstring("A link has occured or will occur.")]
+		odeLink = 4 /*DROPEFFECT_LINK*/,
+		/// \brief Combination of \c odeCopy and \c odeMove
+		[helpstring("Combination of 'odeCopy' and 'odeMove'.")]
+		odeCopyOrMove = odeCopy | odeMove,
+		/// \brief The drop target window has scrolled or will scroll
+		[helpstring("The drop target window has scrolled or will scroll.")]
+		odeScroll = 0x80000000 /*DROPEFFECT_SCROLL*/
+	} OLEDropEffectConstants;
+
+	/// \brief <em>Constants used with the \c Orientation property</em>
+	///
+	/// \sa IProgressBar::Orientation
+	[helpstring("Constants used with the 'Orientation' property.")]
+	typedef enum OrientationConstants {
+		/// \brief The progress bar displays progress status horizontally, from left to right
+		[helpstring("The progress bar displays progress status horizontally, from left to right.")]
+		oHorizontal,
+		/// \brief The progress bar displays progress status vertically, from bottom to top
+		[helpstring("The progress bar displays progress status vertically, from bottom to top.")]
+		oVertical
+	} OrientationConstants;
+
+	/// \brief <em>Constants used with the \c ProgressState property</em>
+	///
+	/// \sa IProgressBar::ProgressState
+	[helpstring("Constants used with the 'ProgressState' property.")]
+	typedef enum ProgressStateConstants {
+		/// \brief The action visualized by this progress bar is performing normal
+		[helpstring("The action visualized by this progress bar is performing normal.")]
+		psNormal = 0x0001/*PBST_NORMAL*/,
+		/// \brief The action visualized by this progress bar failed
+		[helpstring("The action visualized by this progress bar failed.")]
+		psFailed = 0x0002/*PBST_ERROR*/,
+		/// \brief The action visualized by this progress bar is paused
+		[helpstring("The action visualized by this progress bar is paused.")]
+		psPaused = 0x0003/*PBST_PAUSED*/
+	} ProgressStateConstants;
+
+	/// \brief <em>Flags used with the \c RightToLeft property</em>
+	///
+	/// \sa IProgressBar::RightToLeft
+	[helpstring("Flags used with the 'RightToLeft' property. They can be combined.")]
+	typedef enum RightToLeftConstants {
+		/// \brief Read text from right to left
+		///
+		/// The items' text is read from right to left, but the general layout is left to right.
+		[helpstring("The items' text is read from right to left, but the general layout is left to right.")]
+		rtlText = 1,
+		/// \brief Use a right to left layout
+		///
+		/// The general layout is right to left.
+		[helpstring("The general layout is right to left.")]
+		rtlLayout = 2
+	} RightToLeftConstants;
+
+
+	/// \interface IOLEDataObject
+	/// \brief <em>Wraps the \c IDataObject interface</em>
+	///
+	/// This interface provides easy access to data being transferred using the \c IDataObject interface.
+	///
+	/// \sa _IOLEDataObjectEvents,
+	///     <a href="https://msdn.microsoft.com/en-us/library/ms688421.aspx">IDataObject</a>
+	[
+		object,
+		uuid(6D7A781E-FF72-487b-9F80-23591EE2BBBA),
+		dual,
+		nonextensible,
+		helpstring("IOLEDataObject interface"),
+		pointer_default(unique)
+	]
+	interface IOLEDataObject : IDispatch
+	{
+		/// \brief <em>Deletes the contents of the \c OLEDataObject object</em>
+		///
+		/// \remarks This method will succeed only if the \c OLEDataObject wraps the control's own
+		///          implementation of the \c IDataObject interface.
+		///
+		/// \sa SetData,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms688421.aspx">IDataObject</a>
+		[id(DISPID_ODO_CLEAR), helpstring("Deletes the contents of the 'OLEDataObject' object.")]
+		HRESULT Clear(void);
+		/// \brief <em>Retrieves the best format settings from the \c OLEDataObject object</em>
+		///
+		/// Call this method to retrieve data format settings that match best with the data format, that you
+		/// actually want to work with. Set the parameters to the data format settings you want to work with.
+		/// The method will set them to the settings you should use.
+		///
+		/// \param[in,out] formatID An integer value specifying the data format. Valid values are those defined
+		///                by VB's \c ClipBoardConstants enumeration, but also any other format that was
+		///                registered using the \c RegisterClipboardFormat API function.
+		/// \param[in,out] index An integer value that is assigned to the internal \c FORMATETC struct's
+		///                \c lindex member. Usually you pass -1 here, but some formats like
+		///                \c CFSTR_FILECONTENTS require multiple \c FORMATETC structs for the same format. In
+		///                such cases you'll give each struct of this format a separate index.
+		/// \param[in,out] dataOrViewAspect An integer value that is assigned to the internal \c FORMATETC
+		///                struct's \c dwAspect member. Any of the \c DVASPECT_* values defined by the
+		///                Microsoft&reg; Windows&reg; SDK are valid. The default is \c DVASPECT_CONTENT.
+		///
+		/// \sa GetData, GetFormat,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms649049.aspx">RegisterClipboardFormat</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms682177.aspx">FORMATETC</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb776902.aspx#CFSTR_FILECONTENTS">CFSTR_FILECONTENTS</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms690318.aspx">DVASPECT</a>
+		[id(DISPID_ODO_GETCANONICALFORMAT), helpstring("Call this method to retrieve data format settings that match best with the data format, that you actually want to work with.")]
+		HRESULT GetCanonicalFormat([in, out] LONG* formatID, [in, out] LONG* Index, [in, out] LONG* dataOrViewAspect);
+		/// \brief <em>Retrieves data from the \c OLEDataObject object</em>
+		///
+		/// Retrieves data from the \c OLEDataObject object, that has the specified format.
+		///
+		/// \param[in] formatID An integer value specifying the format of the data to retrieve. Valid values
+		///            are those defined by VB's \c ClipBoardConstants enumeration, but also any other format
+		///            that has been registered using the \c RegisterClipboardFormat API function.
+		/// \param[in] index An integer value that is assigned to the internal \c FORMATETC struct's \c lindex
+		///            member. Usually you pass -1 here, but some formats like \c CFSTR_FILECONTENTS require
+		///            multiple \c FORMATETC structs for the same format. In such cases you'll give each struct
+		///            of this format a separate index.
+		/// \param[in] dataOrViewAspect An integer value that is assigned to the internal \c FORMATETC struct's
+		///            \c dwAspect member. Any of the \c DVASPECT_* values defined by the Microsoft&reg;
+		///            Windows&reg; SDK are valid. The default is \c DVASPECT_CONTENT.
+		///
+		/// \return The data that has the specified format.
+		///
+		/// \remarks This method will fail, if the \c OLEDataObject object does not contain data of the
+		///          specified format.
+		///
+		/// \sa GetCanonicalFormat, GetFormat, SetData,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms649049.aspx">RegisterClipboardFormat</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms682177.aspx">FORMATETC</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb776902.aspx#CFSTR_FILECONTENTS">CFSTR_FILECONTENTS</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms690318.aspx">DVASPECT</a>
+		[id(DISPID_ODO_GETDATA), helpstring("Retrieves data from the 'OLEDataObject' object.")]
+		HRESULT GetData([in] LONG formatID, [in, defaultvalue(-1)] LONG Index, [in, defaultvalue(1)] LONG dataOrViewAspect, [out, retval] VARIANT* pData);
+		/// \brief <em>Retrieves the \c DROPDESCRIPTION data stored by the \c OLEDataObject object</em>
+		///
+		/// Retrieves the \c DROPDESCRIPTION data stored by the \c OLEDataObject object. The drop description
+		/// describes what will happen if the user drops the dragged data at the current position. It is
+		/// displayed at the bottom of the drag image.
+		///
+		/// \param[in,out] targetDescription Receives the description of the current drop target.
+		/// \param[in,out] actionDescription Receives the description of the whole drop action, i. e. a string
+		///                like <em>"Copy to %1"</em> where <em>"Copy to"</em> is the description of the current
+		///                drop effect and <em>"%1"</em> is the placeholder for the drop target description
+		///                specified by \c targetDescription.
+		/// \param[in,out] icon Receives the icon used to visualize the current drop effect. Any of the values
+		///                defined by the \c DropDescriptionIconConstants enumeration is valid.
+		///
+		/// \remarks In the \c actionDescription string, the sign "%" is escaped as "%%".\n
+		///          Requires Windows Vista or newer.
+		///
+		/// \sa SetDropDescription, IProgressBar::SupportOLEDragImages, DropDescriptionIconConstants,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb773268.aspx">DROPDESCRIPTION</a>
+		[id(DISPID_ODO_GETDROPDESCRIPTION), helpstring("Retrieves the 'DROPDESCRIPTION' data stored by the 'OLEDataObject' object. Requires Windows Vista or newer.")]
+		HRESULT GetDropDescription([in, out, optional] VARIANT* targetDescription, [in, out, optional] VARIANT* actionDescription, [in, out, defaultvalue(0)] DropDescriptionIconConstants* Icon);
+		/// \brief <em>Retrieves whether the \c OLEDataObject object contains data in a specific format</em>
+		///
+		/// \param[in] formatID An integer value specifying the format to check for. Valid values are those
+		///            defined by VB's \c ClipBoardConstants enumeration, but also any other format that was
+		///            registered using the \c RegisterClipboardFormat API function.
+		/// \param[in] index An integer value that is assigned to the internal \c FORMATETC struct's \c lindex
+		///            member. Usually you pass -1 here, but some formats like \c CFSTR_FILECONTENTS require
+		///            multiple \c FORMATETC structs for the same format. In such cases you'll give each struct
+		///            of this format a separate index.
+		/// \param[in] dataOrViewAspect An integer value that is assigned to the internal \c FORMATETC struct's
+		///            \c dwAspect member. Any of the \c DVASPECT_* values defined by the Microsoft&reg;
+		///            Windows&reg; SDK are valid. The default is \c DVASPECT_CONTENT.
+		///
+		/// \return \c True, if the \c OLEDataObject object contains data in the specified format;
+		///         otherwise \c False.
+		///
+		/// \sa GetCanonicalFormat, GetData, SetData,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms649049.aspx">RegisterClipboardFormat</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms682177.aspx">FORMATETC</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb776902.aspx#CFSTR_FILECONTENTS">CFSTR_FILECONTENTS</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms690318.aspx">DVASPECT</a>
+		[id(DISPID_ODO_GETFORMAT), helpstring("Retrieves whether the 'OLEDataObject' object contains data in a specific format.")]
+		HRESULT GetFormat([in] LONG formatID, [in, defaultvalue(-1)] LONG Index, [in, defaultvalue(1)] LONG dataOrViewAspect, [out, retval] VARIANT_BOOL* pFormatAvailable);
+		/// \brief <em>Inserts data into the \c OLEDataObject object using the specified format</em>
+		///
+		/// \param[in] formatID An integer value specifying the format of the data being passed. Valid values
+		///            are those defined by VB's \c ClipBoardConstants enumeration, but also any other format
+		///            that has been registered using the \c RegisterClipboardFormat API function.
+		/// \param[in] data The data to insert. If not specified, the \c OLESetData event will be raised if
+		///            data of the specified format is requested from the \c OLEDataObject object.
+		/// \param[in] index An integer value that is assigned to the internal \c FORMATETC struct's \c lindex
+		///            member. Usually you pass -1 here, but some formats like \c CFSTR_FILECONTENTS require
+		///            multiple \c FORMATETC structs for the same format. In such cases you'll give each struct
+		///            of this format a separate index.
+		/// \param[in] dataOrViewAspect An integer value that is assigned to the internal \c FORMATETC struct's
+		///            \c dwAspect member. Any of the \c DVASPECT_* values defined by the Microsoft&reg;
+		///            Windows&reg; SDK are valid. The default is \c DVASPECT_CONTENT.
+		///
+		/// \remarks The \c data parameter is optional only if the \c OLEDataObject wraps the control's own
+		///          implementation of the \c IDataObject interface.
+		///
+		/// \sa GetData, Clear,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms649049.aspx">RegisterClipboardFormat</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms688421.aspx">IDataObject</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms682177.aspx">FORMATETC</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb776902.aspx#CFSTR_FILECONTENTS">CFSTR_FILECONTENTS</a>,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms690318.aspx">DVASPECT</a>
+		[id(DISPID_ODO_SETDATA), helpstring("Inserts data into the 'OLEDataObject' object using the specified format.")]
+		HRESULT SetData([in] LONG formatID, [in, optional] VARIANT data, [in, defaultvalue(-1)] LONG Index, [in, defaultvalue(1)] LONG dataOrViewAspect);
+		/// \brief <em>Sets the drop description displayed below the drag image</em>
+		///
+		/// Sets the \c DROPDESCRIPTION data. The drop description describes what will happen if the user drops
+		/// the dragged data at the current position. It is displayed at the bottom of the drag image.
+		///
+		/// \param[in] targetDescription The description of the current drop target.
+		/// \param[in] actionDescription The description of the whole drop action, i. e. a string like <em>"Copy
+		///            to %1"</em> where <em>"Copy to"</em> is the description of the current drop effect and
+		///            <em>"%1"</em> is the placeholder for the drop target description specified by
+		///            \c targetDescription.
+		/// \param[in] icon The icon used to visualize the current drop effect. Any of the values defined by
+		///            the \c DropDescriptionIconConstants enumeration is valid.
+		///
+		/// \remarks In the \c actionDescription string, the sign "%" is escaped as "%%".\n
+		///          Requires Windows Vista or newer.
+		///
+		/// \sa GetDropDescription, IProgressBar::SupportOLEDragImages, DropDescriptionIconConstants,
+		///     <a href="https://msdn.microsoft.com/en-us/library/bb773268.aspx">DROPDESCRIPTION</a>
+		[id(DISPID_ODO_SETDROPDESCRIPTION), helpstring("Sets the drop description displayed below the drag image. Requires Windows Vista or newer.")]
+		HRESULT SetDropDescription([in, optional] VARIANT targetDescription, [in, optional] VARIANT actionDescription, [in, defaultvalue(ddiNone)] DropDescriptionIconConstants Icon);
+	}
+
+
+	/// \interface _IOLEDataObjectEvents
+	/// \brief <em>The \c OLEDataObject class' events interface</em>
+	///
+	/// This interface defines all events the \c OLEDataObject class may raise.
+	///
+	/// \sa IOLEDataObject
+	[
+		uuid(D0AA3122-D01F-4a9c-8750-E093436BF506),
+		helpstring("IOLEDataObject-event-interface")
+	]
+	dispinterface _IOLEDataObjectEvents
+	{
+		properties:
+		methods:
+	};
+
+
+	/// \brief <em>The \c OLEDataObject class</em>
+	///
+	/// This COM class implements the \c IOLEDataObject and \c _IOLEDataObjectEvents interfaces.
+	///
+	/// \sa IOLEDataObject, _IOLEDataObjectEvents
+	[
+		uuid(DBC0D704-CCDC-40df-9480-7E4EA9487E24),
+		version(2.6),
+		noncreatable,
+		helpstring("OLEDataObject Class 2.6 (ANSI)")
+	]
+	coclass OLEDataObject
+	{
+		[default] interface IOLEDataObject;
+		[default, source] dispinterface _IOLEDataObjectEvents;
+	};
+
+
+	/// \interface IProgressBar
+	/// \author Timo "TimoSoft" Kunze
+	/// \brief <em>The main interface</em>
+	///
+	/// This is the control's main interface. It wraps the control window.
+	///
+	/// \sa _IProgressBarEvents
+	[
+		object,
+		uuid(2B3708B4-A1B7-43b5-BEFF-A6EF623F54C0),
+		dual,
+		nonextensible,
+		helpstring("IProgressBar interface"),
+		pointer_default(unique)
+	]
+	interface IProgressBar : IDispatch
+	{
+		/// \brief <em>Controls animation of a marquee style progress bar</em>
+		///
+		/// Turns the marquee mode on or off. If set to \c True, the progress bar moves like a marquee;
+		/// otherwise it doesn't move.
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa MarqueeStepDuration, BarStyle
+		[propget, id(DISPID_PROGBAR_ACTIVATEMARQUEE), helpstring("Turns the marquee mode on or off. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT ActivateMarquee([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_PROGBAR_ACTIVATEMARQUEE), helpstring("Turns the marquee mode on or off. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT ActivateMarquee([in] VARIANT_BOOL newValue);
+		/// \brief <em>Controls the style of the control's outer border</em>
+		///
+		/// Retrieves or sets the kind of border that is drawn around the control. Any of the values defined
+		/// by the \c AppearanceConstants enumeration is valid.
+		///
+		/// \sa BorderStyle, AppearanceConstants
+		[propget, id(DISPID_PROGBAR_APPEARANCE), helpstring("Retrieves or sets the kind of border that is drawn around the control.")]
+		HRESULT Appearance([out, retval] AppearanceConstants* pValue);
+		[propput, id(DISPID_PROGBAR_APPEARANCE), helpstring("Retrieves or sets the kind of border that is drawn around the control.")]
+		HRESULT Appearance([in] AppearanceConstants newValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's application ID</em>
+		///
+		///   Retrieves the control's application ID. This property is part of the fingerprint that
+		///   uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppName, AppShortName, Build, CharSet, IsRelease, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_PROGBAR_APPID), hidden]
+		HRESULT AppID([out, retval] SHORT* pValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's application name</em>
+		///
+		///   Retrieves the control's application name. This property is part of the fingerprint that
+		///   uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppShortName, Build, CharSet, IsRelease, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_PROGBAR_APPNAME), hidden]
+		HRESULT AppName([out, retval] BSTR* pValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's short application name</em>
+		///
+		///   Retrieves the control's short application name. This property is part of the fingerprint
+		///   that uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppName, Build, CharSet, IsRelease, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_PROGBAR_APPSHORTNAME), hidden]
+		HRESULT AppShortName([out, retval] BSTR* pValue);
+		/// \brief <em>Specifies the control's background color</em>
+		///
+		/// Retrieves or sets the control's background color. If set to -1, the default color is used.
+		///
+		/// \remarks This property isn't supported for themed progress bars.
+		///
+		/// \sa BarColor
+		[propget, id(DISPID_PROGBAR_BACKCOLOR), helpstring("Retrieves or sets the control's background color. If set to -1, the default color is used. This property isn't supported for themed progress bars.")]
+		HRESULT BackColor([out, retval] OLE_COLOR* pValue);
+		[propput, id(DISPID_PROGBAR_BACKCOLOR), helpstring("Retrieves or sets the control's background color. If set to -1, the default color is used. This property isn't supported for themed progress bars.")]
+		HRESULT BackColor([in] OLE_COLOR newValue);
+		/// \brief <em>Specifies the control's progress bar color</em>
+		///
+		/// Retrieves or sets the color of the bar indicating the progress status. If set to -1, the default
+		/// color is used.
+		///
+		/// \remarks This property isn't supported for themed progress bars.
+		///
+		/// \sa BackColor
+		[propget, id(DISPID_PROGBAR_BARCOLOR), helpstring("Retrieves or sets the color of the bar indicating the progress status. If set to -1, the default color is used. This property isn't supported for themed progress bars.")]
+		HRESULT BarColor([out, retval] OLE_COLOR* pValue);
+		[propput, id(DISPID_PROGBAR_BARCOLOR), helpstring("Retrieves or sets the color of the bar indicating the progress status. If set to -1, the default color is used. This property isn't supported for themed progress bars.")]
+		HRESULT BarColor([in] OLE_COLOR newValue);
+		/// \brief <em>Controls the visualization style of the progress</em>
+		///
+		/// Retrieves or sets how progress status is displayed. Any of the values defined by the
+		/// \c BarStyleConstants enumeration is valid.
+		///
+		/// \attention Changing this property may destroy and recreate the control.
+		///
+		/// \sa Orientation, BarStyleConstants
+		[propget, id(DISPID_PROGBAR_BARSTYLE), helpstring("Retrieves or sets how progress status is displayed. Changing this property may destroy and recreate the control.")]
+		HRESULT BarStyle([out, retval] BarStyleConstants* pValue);
+		[propput, id(DISPID_PROGBAR_BARSTYLE), helpstring("Retrieves or sets how progress status is displayed. Changing this property may destroy and recreate the control.")]
+		HRESULT BarStyle([in] BarStyleConstants newValue);
+		/// \brief <em>Controls the style of the control's inner border</em>
+		///
+		/// Retrieves or sets the kind of inner border that is drawn around the control. Any of the values
+		/// defined by the \c BorderStyleConstants enumeration is valid.
+		///
+		/// \sa Appearance, BorderStyleConstants
+		[propget, id(DISPID_PROGBAR_BORDERSTYLE), helpstring("Retrieves or sets the kind of inner border that is drawn around the control.")]
+		HRESULT BorderStyle([out, retval] BorderStyleConstants* pValue);
+		[propput, id(DISPID_PROGBAR_BORDERSTYLE), helpstring("Retrieves or sets the kind of inner border that is drawn around the control.")]
+		HRESULT BorderStyle([in] BorderStyleConstants newValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's build number</em>
+		///
+		///   Retrieves the control's build number. This property is part of the fingerprint
+		///   that uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa Version, AppID, AppName, AppShortName, CharSet, IsRelease, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_PROGBAR_BUILD), hidden]
+		HRESULT Build([out, retval] LONG* pValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's character set</em>
+		///
+		///   Retrieves the control's character set (Unicode or ANSI). This property is part of the
+		///   fingerprint that uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppName, AppShortName, Build, IsRelease, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_PROGBAR_CHARSET), hidden]
+		HRESULT CharSet([out, retval] BSTR* pValue);
+		/// \brief <em>Specifies the control's current progress status</em>
+		///
+		/// Retrieves or sets the current progress status.
+		///
+		/// \sa Minimum, Maximum, SmoothReverse
+		[propget, id(DISPID_PROGBAR_CURRENTVALUE), helpstring("Retrieves or sets the current progress status.")]
+		HRESULT CurrentValue([out, retval] LONG* pValue);
+		[propput, id(DISPID_PROGBAR_CURRENTVALUE), helpstring("Retrieves or sets the current progress status.")]
+		HRESULT CurrentValue([in] LONG newValue);
+		/// \brief <em>Controls which events are fired</em>
+		///
+		/// Retrieves or sets the events that won't be fired. Disabling events increases performance.
+		/// Any combination of the values defined by the \c DisabledEventsConstants enumeration is valid.
+		///
+		/// \sa DisabledEventsConstants
+		[propget, id(DISPID_PROGBAR_DISABLEDEVENTS), helpstring("Retrieves or sets the events that won't be fired. Disabling events increases performance."), nonbrowsable]
+		HRESULT DisabledEvents([out, retval] DisabledEventsConstants* pValue);
+		[propput, id(DISPID_PROGBAR_DISABLEDEVENTS), helpstring("Retrieves or sets the events that won't be fired. Disabling events increases performance."), nonbrowsable]
+		HRESULT DisabledEvents([in] DisabledEventsConstants newValue);
+		/// \brief <em>Controls redrawing of the control</em>
+		///
+		/// Enables or disables automatic redrawing of the control. Disabling redraw while doing large changes
+		/// on the control may increase performance. If set to \c False, the control will redraw itself
+		/// automatically; otherwise not.
+		[propget, id(DISPID_PROGBAR_DONTREDRAW), helpstring("Enables or disables automatic redrawing of the control.")]
+		HRESULT DontRedraw([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_PROGBAR_DONTREDRAW), helpstring("Enables or disables automatic redrawing of the control.")]
+		HRESULT DontRedraw([in] VARIANT_BOOL newValue);
+		/// \brief <em>Controls whether the control accepts user input</em>
+		///
+		/// Enables or disables the control for user input. If set to \c True, it reacts to user input;
+		/// otherwise not.
+		[propget, id(DISPID_PROGBAR_ENABLED), helpstring("Enables or disables the control for user input.")]
+		HRESULT Enabled([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_PROGBAR_ENABLED), helpstring("Enables or disables the control for user input.")]
+		HRESULT Enabled([in] VARIANT_BOOL newValue);
+		/// \brief <em>Controls when the \c MouseHover event is fired</em>
+		///
+		/// Retrieves or sets the number of milliseconds the mouse cursor must be located over the
+		/// control's client area before the \c MouseHover event is fired. If set to -1, the system hover
+		/// time is used.
+		///
+		/// \sa _IProgressBarEvents::MouseHover
+		[propget, id(DISPID_PROGBAR_HOVERTIME), helpstring("Retrieves or sets the number of milliseconds the mouse cursor must be located over the control's client area before the 'MouseHover' event is fired.")]
+		HRESULT HoverTime([out, retval] LONG* pValue);
+		[propput, id(DISPID_PROGBAR_HOVERTIME), helpstring("Retrieves or sets the number of milliseconds the mouse cursor must be located over the control's client area before the 'MouseHover' event is fired.")]
+		HRESULT HoverTime([in] LONG newValue);
+		/// \brief <em>Retrieves the control's window handle</em>
+		///
+		/// Retrieves the control's window handle.
+		///
+		/// \remarks This property is read-only.
+		///
+		/// \sa _IProgressBarEvents::RecreatedControlWindow, _IProgressBarEvents::DestroyedControlWindow
+		[propget, id(DISPID_PROGBAR_HWND), helpstring("Retrieves the control's window handle."), nonbrowsable]
+		HRESULT hWnd([out, retval] OLE_HANDLE* pValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the control's release type</em>
+		///
+		///   Retrieves the control's release type. This property is part of the fingerprint
+		///   that uniquely identifies each software written by Timo "TimoSoft" Kunze. If set to
+		///   \c True, the control was compiled for release; otherwise it was compiled for debugging.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppName, AppShortName, Build, CharSet, Programmer, Tester
+		/// \endif
+		[propget, id(DISPID_PROGBAR_ISRELEASE), hidden]
+		HRESULT IsRelease([out, retval] VARIANT_BOOL* pValue);
+		/// \brief <em>Controls animation of a marquee style progress bar</em>
+		///
+		/// Retrieves or sets the time in milliseconds between marquee animation updates.
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa ActivateMarquee, BarStyle
+		[propget, id(DISPID_PROGBAR_MARQUEESTEPDURATION), helpstring("Retrieves or sets the time in milliseconds between marquee animation updates. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT MarqueeStepDuration([out, retval] LONG* pValue);
+		[propput, id(DISPID_PROGBAR_MARQUEESTEPDURATION), helpstring("Retrieves or sets the time in milliseconds between marquee animation updates. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT MarqueeStepDuration([in] LONG newValue);
+		/// \brief <em>Specifies the maximum progress value</em>
+		///
+		/// Retrieves or sets the value, that equals a progress status of 100 %.
+		///
+		/// \sa Minimum, CurrentValue, StepWidth
+		[propget, id(DISPID_PROGBAR_MAXIMUM), helpstring("Retrieves or sets the value, that equals a progress status of 0.")]
+		HRESULT Maximum([out, retval] LONG* pValue);
+		[propput, id(DISPID_PROGBAR_MAXIMUM), helpstring("Retrieves or sets the value, that equals a progress status of 0.")]
+		HRESULT Maximum([in] LONG newValue);
+		/// \brief <em>Specifies the minimum progress value</em>
+		///
+		/// Retrieves or sets the value, that equals a progress status of 0 %.
+		///
+		/// \sa Maximum, CurrentValue, StepWidth
+		[propget, id(DISPID_PROGBAR_MINIMUM), helpstring("Retrieves or sets the value, that equals a progress status of 0.")]
+		HRESULT Minimum([out, retval] LONG* pValue);
+		[propput, id(DISPID_PROGBAR_MINIMUM), helpstring("Retrieves or sets the value, that equals a progress status of 0.")]
+		HRESULT Minimum([in] LONG newValue);
+		/// \brief <em>Controls the control's mouse cursor</em>
+		///
+		/// Retrieves or sets a user-defined mouse cursor. It's used if \c MousePointer is set to
+		/// \c mpCustom.
+		///
+		/// \sa MousePointer, MousePointerConstants
+		[propget, id(DISPID_PROGBAR_MOUSEICON), helpstring("Retrieves or sets a user-defined mouse cursor.")]
+		HRESULT MouseIcon([out, retval] IPictureDisp** ppMouseIcon);
+		[propput, id(DISPID_PROGBAR_MOUSEICON), helpstring("Retrieves or sets a user-defined mouse cursor.")]
+		HRESULT MouseIcon([in] IPictureDisp* pNewMouseIcon);
+		[propputref, id(DISPID_PROGBAR_MOUSEICON), helpstring("Retrieves or sets a user-defined mouse cursor.")]
+		HRESULT MouseIcon([in] IPictureDisp* pNewMouseIcon);
+		/// \brief <em>Controls the control's mouse cursor</em>
+		///
+		/// Retrieves or sets the cursor's type that's used if the mouse cursor is placed within the
+		/// control's client area. Any of the values defined by the \c MousePointerConstants enumeration
+		/// is valid.
+		///
+		/// \sa MouseIcon, MousePointerConstants
+		[propget, id(DISPID_PROGBAR_MOUSEPOINTER), helpstring("Retrieves or sets the cursor's type that's used if the mouse cursor is placed within the control's client area.")]
+		HRESULT MousePointer([out, retval] MousePointerConstants* pValue);
+		[propput, id(DISPID_PROGBAR_MOUSEPOINTER), helpstring("Retrieves or sets the cursor's type that's used if the mouse cursor is placed within the control's client area.")]
+		HRESULT MousePointer([in] MousePointerConstants newValue);
+		/// \brief <em>Controls the control's orientation</em>
+		///
+		/// Retrieves or sets the direction, in which the control is filled up. Any of the values defined by
+		/// the \c OrientationConstants enumeration is valid.
+		///
+		/// \sa OrientationConstants
+		[propget, id(DISPID_PROGBAR_ORIENTATION), helpstring("Retrieves or sets the direction, in which the control is filled up.")]
+		HRESULT Orientation([out, retval] OrientationConstants* pValue);
+		[propput, id(DISPID_PROGBAR_ORIENTATION), helpstring("Retrieves or sets the direction, in which the control is filled up.")]
+		HRESULT Orientation([in] OrientationConstants newValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the name(s) of the control's programmer(s)</em>
+		///
+		///   Retrieves the name(s) of the control's programmer(s). This property is part of the
+		///   fingerprint that uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppName, AppShortName, Build, CharSet, IsRelease, Tester
+		/// \endif
+		[propget, id(DISPID_PROGBAR_PROGRAMMER), hidden]
+		HRESULT Programmer([out, retval] BSTR* pValue);
+		/// \brief <em>Specifies the state of the associated action to visualize</em>
+		///
+		/// Retrieves or sets the state of the action associated with this progress bar. Different states are
+		/// visualized differently. Any of the values defined by the \c ProgressStateConstants enumeration is
+		/// valid.
+		///
+		/// \remarks Requires comctl32.dll version 6.10 or higher.
+		///
+		/// \sa Minimum, Maximum, CurrentValue, ProgressStateConstants
+		[propget, id(DISPID_PROGBAR_PROGRESSSTATE), helpstring("Retrieves or sets the state of the action associated with this progress bar. Different states are visualized differently. Requires comctl32.dll version 6.10 or higher.")]
+		HRESULT ProgressState([out, retval] ProgressStateConstants* pValue);
+		[propput, id(DISPID_PROGBAR_PROGRESSSTATE), helpstring("Retrieves or sets the state of the action associated with this progress bar. Different states are visualized differently. Requires comctl32.dll version 6.10 or higher.")]
+		HRESULT ProgressState([in] ProgressStateConstants newValue);
+		/// \brief <em>Controls the control's behavior in drag'n'drop operations</em>
+		///
+		/// Retrieves or sets whether the control is registered as a target for OLE drag'n'drop. If set to
+		/// \c True, the control accepts OLE drag'n'drop actions; otherwise not.
+		///
+		/// \sa SupportOLEDragImages, _IProgressBarEvents::OLEDragEnter
+		[propget, id(DISPID_PROGBAR_REGISTERFOROLEDRAGDROP), helpstring("Retrieves or sets whether the control is registered as a target for OLE drag'n'drop.")]
+		HRESULT RegisterForOLEDragDrop([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_PROGBAR_REGISTERFOROLEDRAGDROP), helpstring("Retrieves or sets whether the control is registered as a target for OLE drag'n'drop.")]
+		HRESULT RegisterForOLEDragDrop([in] VARIANT_BOOL newValue);
+		/// \brief <em>Controls the control's right-to-left features</em>
+		///
+		/// Retrieves or sets the control's general layout. If set to \c True, the layout direction is
+		/// right to left (e. g. the bar fills from right to left); otherwise it is left to right.
+		///
+		/// \deprecated Use the 'RightToLeft' property instead.
+		///
+		/// \sa RightToLeft
+		[propget, id(DISPID_PROGBAR_RIGHTTOLEFTLAYOUT), helpstring("Retrieves or sets the control's general layout. This property is deprecated. Use the 'RightToLeft' property instead."), hidden]
+		HRESULT RightToLeftLayout([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_PROGBAR_RIGHTTOLEFTLAYOUT), helpstring("Retrieves or sets the control's general layout. This property is deprecated. Use the 'RightToLeft' property instead."), hidden]
+		HRESULT RightToLeftLayout([in] VARIANT_BOOL newValue);
+		/// \brief <em>Specifies whether decrementing progress is visualized animated</em>
+		///
+		/// Retrieves or sets whether the control switches from a higher progress state to a lower one with an
+		/// animated smooth transition or simply jumps to the lower progress state. If set to \c True, an
+		/// animated smooth transition is displayed; otherwise not.
+		///
+		/// \remarks Requires comctl32.dll version 6.10 or higher.
+		///
+		/// \sa CurrentValue, BarStyle
+		[propget, id(DISPID_PROGBAR_SMOOTHREVERSE), helpstring("Retrieves or sets whether the control switches from a higher progress state to a lower one with an animated smooth transition or simply jumps to the lower progress state. Requires comctl32.dll version 6.10 or higher.")]
+		HRESULT SmoothReverse([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_PROGBAR_SMOOTHREVERSE), helpstring("Retrieves or sets whether the control switches from a higher progress state to a lower one with an animated smooth transition or simply jumps to the lower progress state. Requires comctl32.dll version 6.10 or higher.")]
+		HRESULT SmoothReverse([in] VARIANT_BOOL newValue);
+		/// \brief <em>Controls the size of progress status changes</em>
+		///
+		/// Retrieves or sets the amount, by which the current progress status will change if the
+		/// \c ChangeCurrentValue method is called with the \c delta parameter being set to -1.
+		///
+		/// \sa ChangeCurrentValue, Maximum, Minimum, CurrentValue
+		[propget, id(DISPID_PROGBAR_STEPWIDTH), helpstring("Retrieves or sets the amount, by which the current progress status will change if the 'ChangeCurrentValue' method is called with the 'delta' parameter being set to -1.")]
+		HRESULT StepWidth([out, retval] LONG* pValue);
+		[propput, id(DISPID_PROGBAR_STEPWIDTH), helpstring("Retrieves or sets the amount, by which the current progress status will change if the 'ChangeCurrentValue' method is called with the 'delta' parameter being set to -1.")]
+		HRESULT StepWidth([in] LONG newValue);
+		/// \brief <em>Controls the control's behavior in drag'n'drop operations</em>
+		///
+		/// Retrieves or sets whether the control creates an \c IDropTargetHelper object, so that a drag image
+		/// can be displayed during OLE drag'n'drop. If set to \c True, the control creates the object;
+		/// otherwise not.
+		///
+		/// \remarks Requires shell32.dll version 5.0 or higher.
+		///
+		/// \sa RegisterForOLEDragDrop, FinishOLEDragDrop,
+		///     <a href="https://msdn.microsoft.com/en-us/library/ms646238.aspx">IDropTargetHelper</a>
+		[propget, id(DISPID_PROGBAR_SUPPORTOLEDRAGIMAGES), helpstring("Retrieves or sets whether the control creates an 'IDropTargetHelper' object, so that a drag image can be displayed during OLE drag'n'drop. Requires shell32.dll version 5.0 or higher.")]
+		HRESULT SupportOLEDragImages([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_PROGBAR_SUPPORTOLEDRAGIMAGES), helpstring("Retrieves or sets whether the control creates an 'IDropTargetHelper' object, so that a drag image can be displayed during OLE drag'n'drop. Requires shell32.dll version 5.0 or higher.")]
+		HRESULT SupportOLEDragImages([in] VARIANT_BOOL newValue);
+		/// \if PRIVATEDOC
+		///   \brief <em>Retrieves the name(s) of the control's tester(s)</em>
+		///
+		///   Retrieves the name(s) of the control's tester(s). This property is part of the
+		///   fingerprint that uniquely identifies each software written by Timo "TimoSoft" Kunze.
+		///
+		///   \remarks This property is hidden and read-only.
+		///
+		///   \sa AppID, AppName, AppShortName, Build, CharSet, IsRelease, Programmer
+		/// \endif
+		[propget, id(DISPID_PROGBAR_TESTER), hidden]
+		HRESULT Tester([out, retval] BSTR* pValue);
+		/// \brief <em>Retrieves the control's version</em>
+		///
+		/// \remarks This property is read-only.
+		[propget, id(DISPID_PROGBAR_VERSION), helpstring("Retrieves the control's version."), nonbrowsable]
+		HRESULT Version([out, retval] BSTR* pValue);
+
+		/// \brief <em>Displays the control's credits</em>
+		///
+		/// Displays some information about this control and its author.
+		[id(DISPID_PROGBAR_ABOUT), helpstring("Displays some information about this control and its author.")]
+		HRESULT About(void);
+		/// \brief <em>Advances the current progress status</em>
+		///
+		/// Advances the current progress status by the specified increment.
+		///
+		/// \param[in] delta The amount by which to increment the current progress status. If set to 0, the
+		///            value of the \c StepWidth property is used.
+		///
+		/// \return The previous progress status.
+		///
+		/// \sa CurrentValue, StepWidth
+		[id(DISPID_PROGBAR_CHANGECURRENTVALUE), helpstring("Advances the current progress status by the specified increment.")]
+		HRESULT ChangeCurrentValue([in, defaultvalue(0)] LONG delta, [out, retval] LONG* pPreviousValue);
+		/// \brief <em>Loads the control's settings from the specified file</em>
+		///
+		/// \param[in] file The file to read from.
+		///
+		/// \return \c True if the settings could be loaded; otherwise \c False.
+		///
+		/// \sa SaveSettingsToFile
+		[id(DISPID_PROGBAR_LOADSETTINGSFROMFILE), helpstring("Loads the control's settings from the specified file.")]
+		HRESULT LoadSettingsFromFile([in] BSTR file, [out, retval] VARIANT_BOOL* pSucceeded);
+		/// \brief <em>Advises the control to redraw itself</em>
+		[id(DISPID_PROGBAR_REFRESH), helpstring("Advises the control to redraw itself.")]
+		HRESULT Refresh(void);
+		/// \brief <em>Saves the control's settings to the specified file</em>
+		///
+		/// \param[in] file The file to write to.
+		///
+		/// \return \c True if the settings could be saved; otherwise \c False.
+		///
+		/// \sa LoadSettingsFromFile
+		[id(DISPID_PROGBAR_SAVESETTINGSTOFILE), helpstring("Saves the control's settings to the specified file.")]
+		HRESULT SaveSettingsToFile([in] BSTR file, [out, retval] VARIANT_BOOL* pSucceeded);
+
+		/// \brief <em>Specifies whether the control intercepts double clicks</em>
+		///
+		/// Enables or disables double clicks. If set to \c True, double clicks are accepted; otherwise all
+		/// clicks are handled as single clicks.
+		///
+		/// \sa _IProgressBarEvents::DblClick, _IProgressBarEvents::MDblClick, _IProgressBarEvents::RDblClick,
+		///     _IProgressBarEvents::XDblClick
+		[propget, id(DISPID_PROGBAR_DETECTDOUBLECLICKS), helpstring("Enables or disables double clicks.")]
+		HRESULT DetectDoubleClicks([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_PROGBAR_DETECTDOUBLECLICKS), helpstring("Enables or disables double clicks.")]
+		HRESULT DetectDoubleClicks([in] VARIANT_BOOL newValue);
+		/// \brief <em>Specifies whether the control draws a text over the progress bar</em>
+		///
+		/// Retrieves or sets whether the control draws the text specified by the \c Text property over the
+		/// progress bar. If set to \c True, the text is drawn; otherwise not.
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa Text, HAlignment, Font
+		[propget, id(DISPID_PROGBAR_DISPLAYTEXT), helpstring("Retrieves or sets whether the control draws the text specified by the 'Text' property over the progress bar. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT DisplayText([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_PROGBAR_DISPLAYTEXT), helpstring("Retrieves or sets whether the control draws the text specified by the 'Text' property over the progress bar. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT DisplayText([in] VARIANT_BOOL newValue);
+		/// \brief <em>Specifies the control's font</em>
+		///
+		/// Retrieves or sets the control's font. It's used to optionally draw a text over the progress bar.
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa UseSystemFont, Text
+		[propget, id(DISPID_PROGBAR_FONT), helpstring("Retrieves or sets the control's font. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT Font([out, retval] IFontDisp** ppFont);
+		[propput, id(DISPID_PROGBAR_FONT), helpstring("Retrieves or sets the control's font. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT Font([in] IFontDisp* pNewFont);
+		[propputref, id(DISPID_PROGBAR_FONT), helpstring("Retrieves or sets the control's font. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT Font([in] IFontDisp* pNewFont);
+		/// \brief <em>Specifies the control's text color</em>
+		///
+		/// Retrieves or sets the control's text color.
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa TextShadowColor, Text
+		[propget, id(DISPID_PROGBAR_FORECOLOR), helpstring("Retrieves or sets the control's text color. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT ForeColor([out, retval] OLE_COLOR* pValue);
+		[propput, id(DISPID_PROGBAR_FORECOLOR), helpstring("Retrieves or sets the control's text color. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT ForeColor([in] OLE_COLOR newValue);
+		/// \brief <em>Controls the horizontal alignment of the control's content</em>
+		///
+		/// Retrieves or sets the horizontal alignment of the control's text. Any of the values defined by
+		/// the \c HAlignmentConstants enumeration is valid.
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa Text, HAlignmentConstants
+		[propget, id(DISPID_PROGBAR_HALIGNMENT), helpstring("Retrieves or sets the horizontal alignment of the control's text. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT HAlignment([out, retval] HAlignmentConstants* pValue);
+		[propput, id(DISPID_PROGBAR_HALIGNMENT), helpstring("Retrieves or sets the horizontal alignment of the control's text. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT HAlignment([in] HAlignmentConstants newValue);
+		/// \brief <em>Controls the control's right-to-left features</em>
+		///
+		/// Enables or disables bidirectional features. Any combination of the values defined by the
+		/// \c RightToLeftConstants enumeration is valid.
+		///
+		/// \sa Text, RightToLeftConstants
+		[propget, id(DISPID_PROGBAR_RIGHTTOLEFT), helpstring("Enables or disables bidirectional features.")]
+		HRESULT RightToLeft([out, retval] RightToLeftConstants* pValue);
+		[propput, id(DISPID_PROGBAR_RIGHTTOLEFT), helpstring("Enables or disables bidirectional features.")]
+		HRESULT RightToLeft([in] RightToLeftConstants newValue);
+		/// \brief <em>Specifies the control's text</em>
+		///
+		/// Retrieves or sets the control's text. It may contain the following placeholders:
+		/// - %1: Current value in percent.
+		/// - %2: Current value as absolute value.
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa DisplayText, HAlignment, Font, UseSystemFont, ForeColor, TextShadowColor, TextShadowOffsetX,
+		///     TextShadowOffsetY
+		[propget, id(DISPID_PROGBAR_TEXT), helpstring("Retrieves or sets the control's text. Requires comctl32.dll version 6.0 or higher."), bindable, displaybind, requestedit]
+		HRESULT Text([out, retval] BSTR* pValue);
+		[propput, id(DISPID_PROGBAR_TEXT), helpstring("Retrieves or sets the control's text. Requires comctl32.dll version 6.0 or higher."), bindable, displaybind, requestedit]
+		HRESULT Text([in] BSTR newValue);
+		/// \brief <em>Specifies the control's text shadow color</em>
+		///
+		/// Retrieves or sets the control's text shadow color.
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa ForeColor, Text, TextShadowOffsetX, TextShadowOffsetY
+		[propget, id(DISPID_PROGBAR_TEXTSHADOWCOLOR), helpstring("Retrieves or sets the control's text shadow color. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT TextShadowColor([out, retval] OLE_COLOR* pValue);
+		[propput, id(DISPID_PROGBAR_TEXTSHADOWCOLOR), helpstring("Retrieves or sets the control's text shadow color. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT TextShadowColor([in] OLE_COLOR newValue);
+		/// \brief <em>Controls the appearance of the control's text shadow</em>
+		///
+		/// Retrieves or sets the horizontal offset of the control's text shadow.
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa TextShadowOffsetY, Text, TextShadowColor
+		[propget, id(DISPID_PROGBAR_TEXTSHADOWOFFSETX), helpstring("Retrieves or sets the horizontal offset of the control's text shadow. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT TextShadowOffsetX([out, retval] OLE_XSIZE_PIXELS* pValue);
+		[propput, id(DISPID_PROGBAR_TEXTSHADOWOFFSETX), helpstring("Retrieves or sets the horizontal offset of the control's text shadow. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT TextShadowOffsetX([in] OLE_XSIZE_PIXELS newValue);
+		/// \brief <em>Controls the appearance of the control's text shadow</em>
+		///
+		/// Retrieves or sets the vertical offset of the control's text shadow.
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa TextShadowOffsetX, Text, TextShadowColor
+		[propget, id(DISPID_PROGBAR_TEXTSHADOWOFFSETY), helpstring("Retrieves or sets the vertical offset of the control's text shadow. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT TextShadowOffsetY([out, retval] OLE_YSIZE_PIXELS* pValue);
+		[propput, id(DISPID_PROGBAR_TEXTSHADOWOFFSETY), helpstring("Retrieves or sets the vertical offset of the control's text shadow. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT TextShadowOffsetY([in] OLE_YSIZE_PIXELS newValue);
+		/// \brief <em>Specifies whether the control uses the system font</em>
+		///
+		/// Retrieves or sets whether the control uses the MS Shell Dlg font (which is mapped to the system's
+		/// default GUI font) or the font specified by the \c Font property. If set to \c True, the system
+		/// font; otherwise the specified font is used.
+		///
+		/// \remarks Requires comctl32.dll version 6.0 or higher.
+		///
+		/// \sa Font
+		[propget, id(DISPID_PROGBAR_USESYSTEMFONT), helpstring("Retrieves or sets whether the control uses the MS Shell Dlg font or the font specified by the 'Font' property. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT UseSystemFont([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_PROGBAR_USESYSTEMFONT), helpstring("Retrieves or sets whether the control uses the MS Shell Dlg font or the font specified by the 'Font' property. Requires comctl32.dll version 6.0 or higher.")]
+		HRESULT UseSystemFont([in] VARIANT_BOOL newValue);
+
+		/// \brief <em>Specifies whether the progress is displayed in the application window's taskbar button</em>
+		///
+		/// Retrieves or sets whether the current progress state and value is displayed in the application main
+		/// window's taskbar button. If set to \c True, the progress is displayed in the taskbar button;
+		/// otherwise not.
+		///
+		/// \remarks To display the progress indicator in the taskbar, the \c hApplicationWindow property has
+		///          to be set, too.\n
+		///          Requires Windows 7 or higher.
+		///
+		/// \sa hApplicationWindow, CurrentValue, ProgressState
+		[propget, id(DISPID_PROGBAR_DISPLAYPROGRESSINTASKBAR), helpstring("Retrieves or sets whether the current progress state and value is displayed in the application main window's taskbar button. Requires Windows 7 or higher.")]
+		HRESULT DisplayProgressInTaskBar([out, retval] VARIANT_BOOL* pValue);
+		[propput, id(DISPID_PROGBAR_DISPLAYPROGRESSINTASKBAR), helpstring("Retrieves or sets whether the current progress state and value is displayed in the application main window's taskbar button. Requires Windows 7 or higher.")]
+		HRESULT DisplayProgressInTaskBar([in] VARIANT_BOOL newValue);
+		/// \brief <em>Specifies the application's main window</em>
+		///
+		/// Retrieves or sets the handle of the application's main window. If the \c DisplayProgressInTaskBar
+		/// property is set to \c True, this window's taskbar button will be extended with a progress
+		/// indicator if the application is running on Windows 7 or newer.
+		///
+		/// \remarks The window has to be visible and its taskbar button already has to be created. Otherwise
+		///          the progress indicator cannot be displayed.
+		///
+		/// \sa DisplayProgressInTaskBar, CurrentValue, ProgressState
+		[propget, id(DISPID_PROGBAR_HAPPLICATIONWINDOW), helpstring("Retrieves or sets the handle of the application's main window. If the 'DisplayProgressInTaskBar' property is set to 'True', this window's taskbar button will be extended with a progress indicator if the application is running on Windows 7 or newer."), nonbrowsable]
+		HRESULT hApplicationWindow([out, retval] OLE_HANDLE* pValue);
+		[propput, id(DISPID_PROGBAR_HAPPLICATIONWINDOW), helpstring("Retrieves or sets the handle of the application's main window. If the 'DisplayProgressInTaskBar' property is set to 'True', this window's taskbar button will be extended with a progress indicator if the application is running on Windows 7 or newer."), nonbrowsable]
+		HRESULT hApplicationWindow([in] OLE_HANDLE newValue);
+
+		/// \brief <em>Finishes a pending drop operation</em>
+		///
+		/// During a drag'n'drop operation the drag image is displayed until the \c OLEDragDrop event has been
+		/// handled. This order is intended by Microsoft Windows. However, if a message box is displayed from
+		/// within the \c OLEDragDrop event, or the drop operation cannot be performed asynchronously and takes
+		/// a long time, it may be desirable to remove the drag image earlier.\n
+		/// This method will break the intended order and finish the drag'n'drop operation (including removal
+		/// of the drag image) immediately.
+		///
+		/// \remarks This method will fail if not called from the \c OLEDragDrop event handler or if no drag
+		///          images are used.
+		///
+		/// \sa _IProgressBarEvents::OLEDragDrop, SupportOLEDragImages
+		[id(DISPID_PROGBAR_FINISHOLEDRAGDROP), helpstring("Finishes a pending drop operation from within the 'OLEDragDrop' event, removing the drag image, but breaking the intended order. See documentation for details.")]
+		HRESULT FinishOLEDragDrop(void);
+	};
+
+
+	/// \interface _IProgressBarEvents
+	/// \author Timo "TimoSoft" Kunze
+	/// \brief <em>The \c ProgressBar class' events interface</em>
+	///
+	/// This interface defines all events the \c ProgressBar class may raise.
+	///
+	/// \sa IProgressBar
+	[
+		uuid(246D4D61-C8E8-4c48-AF8A-06F08AD61AFB),
+		helpstring("IProgressBar-event-interface")
+	]
+	dispinterface _IProgressBarEvents
+	{
+		properties:
+		methods:
+			/// \brief <em>The user clicked into the control's client area</em>
+			///
+			/// Will be fired if the user clicks into the control's client area using the left mouse button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the click. This should always
+			///            be \c vbLeftButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the click.
+			///            Any combination of the values defined by VB's \c ShiftConstants enumeration is
+			///            valid.
+			/// \param[in] x The x-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This is the control's default event.\n
+			///          This event may be disabled.
+			///
+			/// \sa DblClick, MClick, RClick, XClick, IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_CLICK), helpstring("Will be fired if the user clicks into the control's client area using the left mouse button. This event may be disabled.")]
+			void Click(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The context menu should be displayed</em>
+			///
+			/// Will be fired if the control's context menu should be displayed.
+			///
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the menu's proposed position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the menu's proposed position relative to the
+			///            control's upper-left corner.
+			///
+			/// \sa RClick
+			[id(DISPID_PROGBARE_CONTEXTMENU), helpstring("Will be fired if the control's context menu should be displayed.")]
+			void ContextMenu(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The user double-clicked into the control's client area</em>
+			///
+			/// Will be fired if the user double-clicks into the control's client area using the left mouse
+			/// button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the double-click. This should
+			///            always be \c vbLeftButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the
+			///            double-click. Any combination of the values defined by VB's \c ShiftConstants
+			///            enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa Click, MDblClick, RDblClick, XDblClick, IProgressBar::DetectDoubleClicks,
+			///     IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_DBLCLICK), helpstring("Will be fired if the user double-clicks into the control's client area using the left mouse button. This event may be disabled.")]
+			void DblClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The control window was destroyed</em>
+			///
+			/// Will be fired after the control window was destroyed.
+			///
+			/// \param[in] hWnd The control's window handle.
+			///
+			/// \sa RecreatedControlWindow, IProgressBar::hWnd
+			[id(DISPID_PROGBARE_DESTROYEDCONTROLWINDOW), helpstring("Will be fired after the control window was destroyed.")]
+			void DestroyedControlWindow(LONG hWnd);
+			/// \brief <em>The user clicked into the control's client area</em>
+			///
+			/// Will be fired if the user clicks into the control's client area using the middle mouse button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the click. This should always
+			///            be \c vbMiddleButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the click.
+			///            Any combination of the values defined by VB's \c ShiftConstants enumeration is
+			///            valid.
+			/// \param[in] x The x-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MDblClick, Click, RClick, XClick, IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_MCLICK), helpstring("Will be fired if the user clicks into the control's client area using the middle mouse button. This event may be disabled.")]
+			void MClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The user double-clicked into the control's client area</em>
+			///
+			/// Will be fired if the user double-clicks into the control's client area using the middle mouse
+			/// button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the double-click. This should
+			///            always be \c vbMiddleButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the
+			///            double-click. Any combination of the values defined by VB's \c ShiftConstants
+			///            enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MClick, DblClick, RDblClick, XDblClick, IProgressBar::DetectDoubleClicks,
+			///     IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_MDBLCLICK), helpstring("Will be fired if the user double-clicks into the control's client area using the middle mouse button. This event may be disabled.")]
+			void MDblClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>A mouse button was pressed over the control's client area</em>
+			///
+			/// Will be fired if the user presses a mouse button while the mouse cursor is located over the
+			/// control's client area.
+			///
+			/// \param[in] button The pressed mouse button. Any of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseUp, Click, MClick, RClick, XClick, ExtendedMouseButtonConstants,
+			///     IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_MOUSEDOWN), helpstring("Will be fired if the user presses a mouse button while the mouse cursor is located over the control's client area. This event may be disabled.")]
+			void MouseDown(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The mouse cursor was moved into the control's client area</em>
+			///
+			/// Will be fired if the user moved the mouse cursor into the control's client area.
+			///
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseLeave, MouseHover, MouseMove, ExtendedMouseButtonConstants, IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_MOUSEENTER), helpstring("Will be fired if the user moved the mouse cursor into the control's client area. This event may be disabled.")]
+			void MouseEnter(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The mouse cursor was moved into the control's client area a specified period of time before</em>
+			///
+			/// Will be fired if the mouse cursor has been located over the control's client area for the number
+			/// of milliseconds specified by the \c IProgressBar::HoverTime property.
+			///
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseEnter, MouseLeave, MouseMove, IProgressBar::HoverTime, ExtendedMouseButtonConstants,
+			///     IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_MOUSEHOVER), helpstring("Will be fired if the mouse cursor has been located over the control's client area for the number of milliseconds specified by the 'HoverTime' property. This event may be disabled.")]
+			void MouseHover(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The mouse cursor was moved out of the control's client area</em>
+			///
+			/// Will be fired if the user moves the mouse cursor out of the control's client area.
+			///
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseEnter, MouseHover, MouseMove, ExtendedMouseButtonConstants, IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_MOUSELEAVE), helpstring("Will be fired if the user moves the mouse cursor out of the control's client area. This event may be disabled.")]
+			void MouseLeave(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The mouse cursor was moved over the control's client area</em>
+			///
+			/// Will be fired if the user moves the mouse cursor over the control's client area.
+			///
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseEnter, MouseLeave, MouseDown, MouseUp, ExtendedMouseButtonConstants,
+			///     IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_MOUSEMOVE), helpstring("Will be fired if the user moves the mouse cursor over the control's client area. This event may be disabled.")]
+			void MouseMove(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>A mouse button was released over the control's client area</em>
+			///
+			/// Will be fired if the user releases a mouse button while the mouse cursor is located over the
+			/// control's client area.
+			///
+			/// \param[in] button The released mouse button. Any of the values defined by VB's
+			///            \c MouseButtonConstants enumeration or the \c ExtendedMouseButtonConstants enumeration
+			///            is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the
+			///            control's upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa MouseDown, Click, MClick, RClick, XClick, ExtendedMouseButtonConstants,
+			///     IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_MOUSEUP), helpstring("Will be fired if the user releases a mouse button while the mouse cursor is located over the control's client area. This event may be disabled.")]
+			void MouseUp(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The data was dropped onto the control during OLE drag'n'drop</em>
+			///
+			/// Will be fired during OLE drag'n'drop if the user completes the operation while the mouse cursor
+			/// is located over the control's client area.
+			///
+			/// \param[in] data The dropped data.
+			/// \param[in,out] effect On entry, a bit field of the drop effects (defined by the
+			///                \c OLEDropEffectConstants enumeration) supported by the drag source. On
+			///                return, this paramter must be set to the drop effect that the target finally
+			///                executed.
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks Don't forget to release any references that you hold to the data object.
+			///
+			/// \sa OLEDragEnter, OLEDragMouseMove, OLEDragLeave, MouseUp, IProgressBar::RegisterForOLEDragDrop,
+			///     IProgressBar::FinishOLEDragDrop, OLEDropEffectConstants
+			[id(DISPID_PROGBARE_OLEDRAGDROP), helpstring("Will be fired during OLE drag'n'drop if the user completes the operation while the mouse cursor is located over the control's client area.")]
+			void OLEDragDrop(IOLEDataObject* data, OLEDropEffectConstants* effect, SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The data was dragged into the control during OLE drag'n'drop</em>
+			///
+			/// Will be fired during OLE drag'n'drop if the user moved the mouse cursor into the control's
+			/// client area.
+			///
+			/// \param[in] data The dragged data.
+			/// \param[in,out] effect On entry, a bit field of the drop effects (defined by the
+			///                \c OLEDropEffectConstants enumeration) supported by the drag source. On
+			///                return, this paramter must be set to the drop effect that the target wants
+			///                to be used on drop.
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \sa OLEDragMouseMove, OLEDragLeave, OLEDragDrop, MouseEnter,
+			///     IProgressBar::RegisterForOLEDragDrop, OLEDropEffectConstants
+			[id(DISPID_PROGBARE_OLEDRAGENTER), helpstring("Will be fired during OLE drag'n'drop if the user moved the mouse cursor into the control's client area.")]
+			void OLEDragEnter(IOLEDataObject* data, OLEDropEffectConstants* effect, SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The data was dragged out of the control during OLE drag'n'drop</em>
+			///
+			/// Will be fired during OLE drag'n'drop if the user moves the mouse cursor out of the control's
+			/// client area or if the user canceled the drag'n'drop operation.
+			///
+			/// \param[in] data The dragged data.
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks Don't forget to release any references that you hold to the data object.
+			///
+			/// \sa OLEDragEnter, OLEDragMouseMove, OLEDragDrop, MouseLeave,
+			///     IProgressBar::RegisterForOLEDragDrop
+			[id(DISPID_PROGBARE_OLEDRAGLEAVE), helpstring("Will be fired during OLE drag'n'drop if the user moves the mouse cursor over the control's client area or if the user canceled the drag'n'drop operation.")]
+			void OLEDragLeave(IOLEDataObject* data, SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The data was dragged over the control during OLE drag'n'drop</em>
+			///
+			/// Will be fired during OLE drag'n'drop if the user moves the mouse cursor over the control's
+			/// client area.
+			///
+			/// \param[in] data The dragged data.
+			/// \param[in,out] effect On entry, a bit field of the drop effects (defined by the
+			///                \c OLEDropEffectConstants enumeration) supported by the drag source. On
+			///                return, this paramter must be set to the drop effect that the target wants
+			///                to be used on drop.
+			/// \param[in] button The pressed mouse buttons. Any combination of the values defined by VB's
+			///            \c MouseButtonConstants enumeration is valid.
+			/// \param[in] shift The pressed modifier keys (Shift, Ctrl, Alt). Any combination of the values
+			///            defined by VB's \c ShiftConstants enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the mouse cursor's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \sa OLEDragEnter, OLEDragLeave, OLEDragDrop, MouseMove, IProgressBar::RegisterForOLEDragDrop,
+			///     OLEDropEffectConstants
+			[id(DISPID_PROGBARE_OLEDRAGMOUSEMOVE), helpstring("Will be fired during OLE drag'n'drop if the user moves the mouse cursor over the control's client area.")]
+			void OLEDragMouseMove(IOLEDataObject* data, OLEDropEffectConstants* effect, SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The user clicked into the control's client area</em>
+			///
+			/// Will be fired if the user clicks into the control's client area using the right mouse button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the click. This should always
+			///            be \c vbRightButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the click.
+			///            Any combination of the values defined by VB's \c ShiftConstants enumeration is
+			///            valid.
+			/// \param[in] x The x-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa ContextMenu, RDblClick, Click, MClick, XClick, IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_RCLICK), helpstring("Will be fired if the user clicks into the control's client area using the right mouse button. This event may be disabled.")]
+			void RClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The user double-clicked into the control's client area</em>
+			///
+			/// Will be fired if the user double-clicks into the control's client area using the right mouse
+			/// button.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the double-click. This should
+			///            always be \c vbRightButton (defined by VB's \c MouseButtonConstants enumeration).
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the
+			///            double-click. Any combination of the values defined by VB's \c ShiftConstants
+			///            enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa RClick, DblClick, MDblClick, XDblClick, IProgressBar::DetectDoubleClicks,
+			///     IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_RDBLCLICK), helpstring("Will be fired if the user double-clicks into the control's client area using the right mouse button. This event may be disabled.")]
+			void RDblClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The control window was recreated</em>
+			///
+			/// Will be fired after the control window was destroyed and recreated.\n
+			/// Some properties can't be changed after the control window was created. If such a property is
+			/// changed and the control window already exists, it is destroyed and recreated.
+			///
+			/// \param[in] hWnd The control's window handle.
+			///
+			/// \sa DestroyedControlWindow, IProgressBar::hWnd
+			[id(DISPID_PROGBARE_RECREATEDCONTROLWINDOW), helpstring("Will be fired after the control window was destroyed and recreated.")]
+			void RecreatedControlWindow(LONG hWnd);
+			/// \brief <em>The control window was resized</em>
+			///
+			/// Will be fired after the control window was resized.
+			[id(DISPID_PROGBARE_RESIZEDCONTROLWINDOW), helpstring("Will be fired after the control window was resized.")]
+			void ResizedControlWindow(void);
+			/// \brief <em>The user clicked into the control's client area</em>
+			///
+			/// Will be fired if the user clicks into the control's client area using one of the extended mouse
+			/// buttons.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the click. This should always
+			///            be a constant defined by the \c ExtendedMouseButtonConstants enumeration.
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the click.
+			///            Any combination of the values defined by VB's \c ShiftConstants enumeration is
+			///            valid.
+			/// \param[in] x The x-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa XDblClick, Click, MClick, RClick, ExtendedMouseButtonConstants, IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_XCLICK), helpstring("Will be fired if the user clicks into the control's client area using one of the extended mouse buttons. This event may be disabled.")]
+			void XClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+			/// \brief <em>The user double-clicked into the control's client area</em>
+			///
+			/// Will be fired if the user double-clicks into the control's client area using one of the extended
+			/// mouse buttons.
+			///
+			/// \param[in] button The mouse buttons that were pressed during the double-click. This should
+			///            be a constant defined by the \c ExtendedMouseButtonConstants enumeration.
+			/// \param[in] shift The modifier keys (Shift, Ctrl, Alt) that were pressed during the
+			///            double-click. Any combination of the values defined by VB's \c ShiftConstants
+			///            enumeration is valid.
+			/// \param[in] x The x-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			/// \param[in] y The y-coordinate (in twips) of the double-click's position relative to the control's
+			///            upper-left corner.
+			///
+			/// \remarks This event may be disabled.
+			///
+			/// \sa XClick, DblClick, MDblClick, RDblClick, ExtendedMouseButtonConstants,
+			///     IProgressBar::DetectDoubleClicks, IProgressBar::DisabledEvents
+			[id(DISPID_PROGBARE_XDBLCLICK), helpstring("Will be fired if the user double-clicks into the control's client area using one of the extended mouse buttons. This event may be disabled.")]
+			void XDblClick(SHORT button, SHORT shift, OLE_XPOS_PIXELS x, OLE_YPOS_PIXELS y);
+	};
+
+
+	/// \author Timo "TimoSoft" Kunze
+	/// \brief <em>The \c ProgressBar class</em>
+	///
+	/// The control's main COM class. It implements the \c IProgressBar and
+	/// \c _IProgressBarEvents interfaces.
+	///
+	/// \sa IProgressBar, _IProgressBarEvents
+	[
+		uuid(EC9E3EA9-8295-4327-9A52-1B54EACF3B8D),
+		version(2.6),
+		helpstring("ProgressBar Control 2.6 (ANSI)")
+	]
+	coclass ProgressBar
+	{
+		[default] interface IProgressBar;
+		[default, source] dispinterface _IProgressBarEvents;
+	};
+
+
+	[
+		uuid(E3022D5C-2ACA-470f-B572-FA16FDC2FE91),
+		version(2.6),
+		noncreatable,
+		helpstring("CommonProperties Class 2.6 (ANSI)"),
+		hidden
+	]
+	coclass CommonProperties
+	{
+		[default] interface IUnknown;
+	};
+
+
+	[
+		uuid(6566CC72-9A7F-4606-8F75-BF134516993A),
+		version(2.6),
+		noncreatable,
+		helpstring("StringProperties Class 2.6 (ANSI)"),
+		hidden
+	]
+	coclass StringProperties
+	{
+		[default] interface IUnknown;
+	};
+};

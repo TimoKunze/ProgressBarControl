@@ -1,0 +1,11 @@
+HKCR
+{
+	NoRemove AppID
+	{
+		'%APPID%' = s 'ProgBarA'
+		'ProgBarA.OCX'
+		{
+			val AppID = s '%APPID%'
+		}
+	}
+}

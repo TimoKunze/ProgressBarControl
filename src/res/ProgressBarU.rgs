@@ -1,0 +1,42 @@
+HKCR
+{
+	ProgBarU.ProgressBar.1 = s 'TimoSoft ProgressBar Control 2.6 (Unicode)'
+	{
+		CLSID = s '{C1538205-902C-423f-AAE5-8E724B88A6F5}'
+		'Insertable'
+	}
+	ProgBarU.ProgressBar = s 'TimoSoft ProgressBar Control 2.6 (Unicode)'
+	{
+		CLSID = s '{C1538205-902C-423f-AAE5-8E724B88A6F5}'
+		CurVer = s 'ProgBarU.ProgressBar.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {C1538205-902C-423f-AAE5-8E724B88A6F5} = s 'TimoSoft ProgressBar Control 2.6 (Unicode)'
+		{
+			ProgID = s 'ProgBarU.ProgressBar.1'
+			VersionIndependentProgID = s 'ProgBarU.ProgressBar'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			ForceRemove 'Implemented Categories'
+			{
+				'{40FC6ED4-2438-11CF-A3DB-080036F12502}'
+				'{0DE86A57-2BAA-11CF-A229-00AA003D7352}'
+				'{0DE86A53-2BAA-11CF-A229-00AA003D7352}'
+			}
+			val AppID = s '%APPID%'
+			ForceRemove 'Control'
+			ForceRemove 'Insertable'
+			ForceRemove 'ToolboxBitmap32' = s '%MODULE%, 1'
+			'MiscStatus' = s '0'
+			{
+				'1' = s '%OLEMISC%'
+			}
+			'TypeLib' = s '{52D76F35-4551-4c56-B53B-A343E42B0AF8}'
+			'Version' = s '2.6'
+		}
+	}
+}
