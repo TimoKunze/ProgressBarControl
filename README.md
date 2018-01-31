@@ -1,6 +1,6 @@
 <p align=center>
-  <a href="https://github.com/TimoKunze/ProgressBarControl/releases/tag/2.6.2">
-    <img alt="Release 2.6.2 Release" src="https://img.shields.io/badge/release-2.6.2-0688CB.svg">
+  <a href="https://github.com/TimoKunze/ProgressBarControl/releases/tag/2.6.3">
+    <img alt="Release 2.6.3 Release" src="https://img.shields.io/badge/release-2.6.3-0688CB.svg">
   </a>
   <a href="https://github.com/TimoKunze/ProgressBarControl/releases">
     <img alt="Download ProgressBarControl" src="https://img.shields.io/badge/download-latest-0688CB.svg">
