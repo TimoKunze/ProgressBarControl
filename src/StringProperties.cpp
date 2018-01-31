@@ -283,7 +283,7 @@ void StringProperties::LoadSettings(void)
 	if(controls.propertyCombo.GetCount() > 0) {
 		switch(properties.propertyToEdit) {
 			case DISPID_PROGBAR_TEXT:
-				for(int i = 0; i < controls.propertyCombo.GetCount(); i++) {
+				for(i = 0; i < controls.propertyCombo.GetCount(); i++) {
 					if(static_cast<int>(controls.propertyCombo.GetItemData(i)) == 0) {
 						controls.propertyCombo.SetCurSel(i);
 						break;
