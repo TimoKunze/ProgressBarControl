@@ -1642,10 +1642,10 @@ STDMETHODIMP ProgressBar::get_BackColor(OLE_COLOR* pValue)
 		if(IsComctl32Version610OrNewer()) {
 			tmp = SendMessage(PBM_GETBKCOLOR, 0, 0);
 		} else {
-			CWindowEx(*this).InternalSetRedraw(FALSE);
+			CWindowEx2(*this).InternalSetRedraw(FALSE);
 			tmp = SendMessage(PBM_SETBKCOLOR, 0, CLR_DEFAULT);
 			SendMessage(PBM_SETBKCOLOR, 0, tmp);
-			CWindowEx(*this).InternalSetRedraw(TRUE);
+			CWindowEx2(*this).InternalSetRedraw(TRUE);
 		}
 		if(tmp == CLR_DEFAULT) {
 			properties.backColor = CLR_NONE;
@@ -1686,10 +1686,10 @@ STDMETHODIMP ProgressBar::get_BarColor(OLE_COLOR* pValue)
 		if(IsComctl32Version610OrNewer()) {
 			tmp = SendMessage(PBM_GETBARCOLOR, 0, 0);
 		} else {
-			CWindowEx(*this).InternalSetRedraw(FALSE);
+			CWindowEx2(*this).InternalSetRedraw(FALSE);
 			tmp = SendMessage(PBM_SETBARCOLOR, 0, CLR_DEFAULT);
 			SendMessage(PBM_SETBARCOLOR, 0, tmp);
-			CWindowEx(*this).InternalSetRedraw(TRUE);
+			CWindowEx2(*this).InternalSetRedraw(TRUE);
 		}
 		if(tmp == CLR_DEFAULT) {
 			properties.barColor = CLR_NONE;
@@ -3200,7 +3200,7 @@ LRESULT ProgressBar::OnPaint(UINT message, WPARAM wParam, LPARAM lParam, BOOL& /
 
 	// TODO: reduce flicker
 	if(drawText) {
-		WTL::CString templateText = properties.text;
+		CStringW templateText = properties.text;
 		int value = SendMessage(PBM_GETPOS, 0, 0);
 		int range = SendMessage(PBM_GETRANGE, FALSE, 0) - SendMessage(PBM_GETRANGE, TRUE, 0);
 		int percent = 0;
@@ -3208,20 +3208,20 @@ LRESULT ProgressBar::OnPaint(UINT message, WPARAM wParam, LPARAM lParam, BOOL& /
 			percent = static_cast<int>(static_cast<__int64>(value) * static_cast<__int64>(100) / static_cast<__int64>(range));
 		}
 
-		WTL::CString text;
+		CStringW text;
 		for(int i = 0; i < templateText.GetLength(); i++) {
-			if(templateText[i] == TEXT('%')) {
-				if(templateText[i + 1] == TEXT('%')) {
+			if(templateText[i] == L'%') {
+				if(templateText[i + 1] == L'%') {
 					text += templateText[i];
 					i++;
-				} else if(templateText[i + 1] == TEXT('1')) {
-					WTL::CString s;
-					s.Format(TEXT("%i"), percent);
+				} else if(templateText[i + 1] == L'1') {
+					CStringW s;
+					s.Format(L"%i", percent);
 					text += s;
 					i++;
-				} else if(templateText[i + 1] == TEXT('2')) {
-					WTL::CString s;
-					s.Format(TEXT("%i"), value);
+				} else if(templateText[i + 1] == L'2') {
+					CStringW s;
+					s.Format(L"%i", value);
 					text += s;
 					i++;
 				} else {
@@ -3232,7 +3232,7 @@ LRESULT ProgressBar::OnPaint(UINT message, WPARAM wParam, LPARAM lParam, BOOL& /
 			}
 		}
 
-		CT2CW converter(text);
+		CW2CW converter(text);
 		LPCWSTR pText = converter;
 		int textLength = 0;
 		if(pText) {
@@ -3255,7 +3255,7 @@ LRESULT ProgressBar::OnPaint(UINT message, WPARAM wParam, LPARAM lParam, BOOL& /
 				clientRectangle.right -= 4;
 
 				HGDIOBJ hOldFont = SelectObject(hDC, reinterpret_cast<HGDIOBJ>(SendMessage(WM_GETFONT, 0, 0)));
-				WTL::CRect textRectangle = clientRectangle;
+				CRect textRectangle = clientRectangle;
 				DWORD drawTextFlags = DT_SINGLELINE | DT_EDITCONTROL | DT_NOPREFIX;
 				if(GetExStyle() & WS_EX_RTLREADING) {
 					drawTextFlags |= DT_RTLREADING;
@@ -3326,7 +3326,7 @@ LRESULT ProgressBar::OnSetCursor(UINT /*message*/, WPARAM /*wParam*/, LPARAM /*l
 	BOOL setCursor = FALSE;
 
 	// Are we really over the control?
-	WTL::CRect clientArea;
+	CRect clientArea;
 	GetClientRect(&clientArea);
 	ClientToScreen(&clientArea);
 	DWORD position = GetMessagePos();
@@ -3480,7 +3480,7 @@ LRESULT ProgressBar::OnWindowPosChanged(UINT /*message*/, WPARAM /*wParam*/, LPA
 {
 	LPWINDOWPOS pDetails = reinterpret_cast<LPWINDOWPOS>(lParam);
 
-	WTL::CRect windowRectangle = m_rcPos;
+	CRect windowRectangle = m_rcPos;
 	/* Ugly hack: We depend on this message being sent without SWP_NOMOVE at least once, but this requirement
 	              not always will be fulfilled. Fortunately pDetails seems to contain correct x and y values
 	              even if SWP_NOMOVE is set.
